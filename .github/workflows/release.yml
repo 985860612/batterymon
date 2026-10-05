@@ -1,0 +1,43 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # 创建 Release 并上传产物
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install goversioninfo (embeds icon + version info into the exe)
+        run: go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+
+      - name: Generate Windows resource (.syso)
+        working-directory: gui
+        run: '& "$(go env GOPATH)\bin\goversioninfo.exe" -o rsrc_windows_amd64.syso versioninfo.json'
+
+      - name: Build CLI
+        run: go build -ldflags="-s -w" -o batterymon.exe .
+
+      - name: Build GUI (windowsgui subsystem, no console window)
+        run: go build -ldflags="-s -w -H windowsgui" -o batterymon-gui.exe ./gui
+
+      - name: Smoke check artifacts exist
+        run: Get-Item batterymon.exe, batterymon-gui.exe | Select-Object Name, Length
+
+      - name: Create GitHub Release with binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            batterymon.exe
+            batterymon-gui.exe
+          generate_release_notes: true
