@@ -1,0 +1,6 @@
+# 构建产物 (GUI 的图标/版本资源 syso 由 goversioninfo 生成, 构建步骤见 README)
+*.exe
+*.syso
+
+# 本地预览二进制
+/bmon-preview
